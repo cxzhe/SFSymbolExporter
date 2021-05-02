@@ -10,6 +10,7 @@ namespace SymbolExporter
         private nfloat _width;
         private nfloat _height;
         private nfloat _weight;
+        private string _path;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -71,6 +72,19 @@ namespace SymbolExporter
                 {
                     _weight = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Weight)));
+                }
+            }
+        }
+
+        public string Path
+        {
+            get => _path;
+            set
+            {
+                if (value != _path)
+                {
+                    _path = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Path)));
                 }
             }
         }

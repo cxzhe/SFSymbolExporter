@@ -6,5 +6,7 @@ namespace SymbolExporter
         public ExportViewModel()
         {
         }
+
+        public string Path { get; set; }
     }
 }

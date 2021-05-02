@@ -12,6 +12,9 @@ namespace SymbolExporter
         private NSImage _image;
         private NSImageView _imageView;
         private NSTextField _weightTextField;
+        private NSTextField _widthTextField;
+        private NSTextField _heightTextField;
+        private NSTextField _tt;
         private NSTextField _symbolNameTextField;
         private NSTextField _symbolExportPlaceTextField;
         private NSSlider _weightSlider;
@@ -22,7 +25,7 @@ namespace SymbolExporter
 
         public ViewController(IntPtr handle) : base(handle)
         {
-            _symbol = new SymbolViewModel("arrowshape.turn.up.backward.2", 200, 200, 0);
+            _symbol = new SymbolViewModel("arrowshape.turn.up.backward.2", 50, 50, 0);
             _symbol.PropertyChanged += _symbol_PropertyChanged;
         }
 
@@ -94,8 +97,8 @@ namespace SymbolExporter
             NSLayoutConstraint.ActivateConstraints(cs);
 
             _weightSlider = new NSSlider();
-            _weightSlider.MinValue = -2;
-            _weightSlider.MaxValue = 2;
+            _weightSlider.MinValue = -4;
+            _weightSlider.MaxValue = 4;
             _weightSlider.Title = "Weight";
             _weightSlider.IntValue = 0;
             _weightSlider.Activated += Slider_Activated;
@@ -118,7 +121,7 @@ namespace SymbolExporter
             NSButton button = new NSButton();
             button.Title = "Export";
             button.TranslatesAutoresizingMaskIntoConstraints = false;
-            button.Activated += Button_Activated;
+            button.Activated += ExportButton_Activated;
             View.AddSubview(button);
 
             cs = new[] {
@@ -130,26 +133,26 @@ namespace SymbolExporter
 
             NSLayoutConstraint.ActivateConstraints(cs);
 
-            NSButton button1 = new NSButton();
-            button1.Title = "Folder..";
-            button1.TranslatesAutoresizingMaskIntoConstraints = false;
-            button1.Activated += Button1_Activated;
-            View.AddSubview(button1);
+            NSButton chooseButton = new NSButton();
+            chooseButton.Title = "Choose...";
+            chooseButton.TranslatesAutoresizingMaskIntoConstraints = false;
+            chooseButton.Activated += Button1_Activated;
+            View.AddSubview(chooseButton);
 
-            cs = new[] {
-                button1.BottomAnchor.ConstraintEqualToAnchor(View.BottomAnchor, -20),
-                button1.LeftAnchor.ConstraintEqualToAnchor(_symbolNameTextField.LeftAnchor, -20),
-                button1.WidthAnchor.ConstraintEqualToConstant(50),
-                button1.HeightAnchor.ConstraintEqualToConstant(50),
-            };
+            //cs = new[] {
+            //    chooseButton.BottomAnchor.ConstraintEqualToAnchor(View.BottomAnchor, -20),
+            //    chooseButton.LeftAnchor.ConstraintEqualToAnchor(_symbolNameTextField.LeftAnchor, -20),
+                //chooseButton.WidthAnchor.ConstraintEqualToConstant(50),
+                //chooseButton.HeightAnchor.ConstraintEqualToConstant(50),
+            //};
 
-            NSLayoutConstraint.ActivateConstraints(cs);
+            //NSLayoutConstraint.ActivateConstraints(cs);
 
             _symbolExportPlaceTextField = new NSTextField();
-            _symbolExportPlaceTextField.PlaceholderString = "Export Place";
+            _symbolExportPlaceTextField.PlaceholderString = "Export Path";
             _symbolExportPlaceTextField.Editable = false;
             _symbolExportPlaceTextField.Bordered = false;
-            _symbolExportPlaceTextField.StringValue = _symbol.Name;
+            //_symbolExportPlaceTextField.StringValue = _symbol.Name;
             _symbolExportPlaceTextField.Alignment = NSTextAlignment.Center;
             _symbolExportPlaceTextField.EditingEnded += _symbolNameTextTield_EditingEnded;
             _symbolExportPlaceTextField.TranslatesAutoresizingMaskIntoConstraints = false;
@@ -157,11 +160,84 @@ namespace SymbolExporter
             View.AddSubview(_symbolExportPlaceTextField);
 
             cs = new[] {
-                _symbolExportPlaceTextField.LeftAnchor.ConstraintEqualToAnchor(_weightSlider.LeftAnchor),
-                _symbolExportPlaceTextField.RightAnchor.ConstraintEqualToAnchor(_weightSlider.RightAnchor),
-                _symbolExportPlaceTextField.BottomAnchor.ConstraintEqualToAnchor(button1.TopAnchor, -10),
+                _symbolExportPlaceTextField.LeftAnchor.ConstraintEqualToAnchor(_symbolNameTextField.LeftAnchor),
+                _symbolExportPlaceTextField.RightAnchor.ConstraintEqualToAnchor(chooseButton.LeftAnchor, -10),
+                _symbolExportPlaceTextField.TopAnchor.ConstraintEqualToAnchor(_weightSlider.BottomAnchor, -10),
+                chooseButton.CenterYAnchor.ConstraintEqualToAnchor(_symbolExportPlaceTextField.CenterYAnchor),
+                chooseButton.RightAnchor.ConstraintEqualToAnchor(_symbolNameTextField.RightAnchor),
             };
             NSLayoutConstraint.ActivateConstraints(cs);
+
+            _widthTextField = new NSTextField();
+            _widthTextField.PlaceholderString = "Width";
+            _widthTextField.StringValue = _symbol.Width.ToString();
+            _widthTextField.Alignment = NSTextAlignment.Center;
+            _widthTextField.EditingEnded += _widthTextField_EditingEnded;
+            _widthTextField.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(_widthTextField);
+
+            _heightTextField = new NSTextField();
+            _heightTextField.PlaceholderString = "Height";
+            _heightTextField.StringValue = _symbol.Height.ToString();
+            _heightTextField.Alignment = NSTextAlignment.Center;
+            _heightTextField.EditingEnded += _heightTextField_EditingEnded;
+            _heightTextField.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(_heightTextField);
+
+            _tt = new NSTextField();
+            _tt.StringValue = "*";
+            _tt.Editable = false;
+            _tt.Bordered = false;
+            _tt.Alignment = NSTextAlignment.Center;
+            //_tt.EditingEnded += _symbolNameTextTield_EditingEnded;
+            _tt.TranslatesAutoresizingMaskIntoConstraints = false;
+            //View.AddSubview(_tt);
+
+            cs = new[] {
+                _widthTextField.LeadingAnchor.ConstraintEqualToAnchor(_symbolNameTextField.LeadingAnchor),
+                _widthTextField.TopAnchor.ConstraintEqualToAnchor(chooseButton.BottomAnchor, 10),
+                //_widthTextField.WidthAnchor.ConstraintEqualToConstant(200),
+
+                _heightTextField.TrailingAnchor.ConstraintEqualToAnchor(_symbolNameTextField.TrailingAnchor),
+                _heightTextField.TopAnchor.ConstraintEqualToAnchor(chooseButton.BottomAnchor, 10),
+                _widthTextField.WidthAnchor.ConstraintEqualToAnchor(_heightTextField.WidthAnchor),
+
+                //_heightTextField.WidthAnchor.ConstraintEqualToConstant(200),
+
+                _widthTextField.TrailingAnchor.ConstraintEqualToAnchor(_heightTextField.LeadingAnchor, -10),
+
+            };
+
+            NSLayoutConstraint.ActivateConstraints(cs);
+        }
+
+        private void _widthTextField_EditingEnded(object sender, EventArgs e)
+        {
+            if (!(sender is NSNotification notificationCenter) || !(notificationCenter.Object is NSTextField textField))
+                return;
+
+            if (string.IsNullOrWhiteSpace(textField.StringValue) || !nfloat.TryParse(textField.StringValue, out nfloat value))
+            {
+                textField.StringValue = _symbol.Width.ToString();
+                return;
+            }
+            else
+                _symbol.Width = value;
+
+        }
+
+        private void _heightTextField_EditingEnded(object sender, EventArgs e)
+        {
+            if (!(sender is NSNotification notificationCenter) || !(notificationCenter.Object is NSTextField textField))
+                return;
+
+            if (string.IsNullOrWhiteSpace(textField.StringValue) || !nfloat.TryParse(textField.StringValue, out nfloat value))
+            {
+                textField.StringValue = _symbol.Height.ToString();
+                return;
+            }
+            else
+                _symbol.Height = value;
         }
 
         NSOpenPanel openPanel;
@@ -221,13 +297,12 @@ namespace SymbolExporter
             //_imageView.SymbolConfiguration = configuration;
             //_weightTextField.StringValue = $"Weight: {_symbol.Weight}";
         }
-
-        private void Button_Activated(object sender, EventArgs e)
+        
+        private void ExportButton_Activated(object sender, EventArgs e)
         {
             //var image = _imageView.Image;
             //var image = Resize(_imageView.Image, 8);
-            var image = Resize1(_imageView.Image, 50);
-
+            var image = Resize1(_imageView.Image, _symbol.Height);
             var bitmapImageRep = new NSBitmapImageRep(image.AsTiff());
             //bitmapImageRep.Size = new CGSize(100, 100);
             //NSDictionary dictionary = NSDictionary.FromObjectAndKey(NSNumber.FromFloat(2f), NSBitmapImageRep.CompressionFactor);
