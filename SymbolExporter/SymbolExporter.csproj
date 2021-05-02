@@ -83,6 +83,7 @@
     </Compile>
     <Compile Include="SymbolViewModel.cs" />
     <Compile Include="ExportViewModel.cs" />
+    <Compile Include="FormatDataSource.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Main.storyboard" />

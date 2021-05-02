@@ -14,10 +14,11 @@ namespace SymbolExporter
         private NSTextField _weightTextField;
         private NSTextField _widthTextField;
         private NSTextField _heightTextField;
-        private NSTextField _tt;
         private NSTextField _symbolNameTextField;
         private NSTextField _symbolExportPlaceTextField;
+        private NSButton _lockButton;
         private NSSlider _weightSlider;
+        private bool _isLock = true;
 
         private readonly SymbolViewModel _symbol;
 
@@ -25,7 +26,8 @@ namespace SymbolExporter
 
         public ViewController(IntPtr handle) : base(handle)
         {
-            _symbol = new SymbolViewModel("arrowshape.turn.up.backward.2", 50, 50, 0);
+            var documents = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            _symbol = new SymbolViewModel("arrowshape.turn.up.backward.2", 50, 50, 0, documents);
             _symbol.PropertyChanged += _symbol_PropertyChanged;
         }
 
@@ -36,6 +38,18 @@ namespace SymbolExporter
                 var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight);
                 _imageView.SymbolConfiguration = configuration;
                 _weightTextField.StringValue = $"Weight: {_symbol.Weight}";
+            }
+            else if (e.PropertyName == nameof(SymbolViewModel.Width))
+            {
+                _widthTextField.StringValue = _symbol.Width.ToString();
+            }
+            else if (e.PropertyName == nameof(SymbolViewModel.Height))
+            {
+                _heightTextField.StringValue = _symbol.Height.ToString();
+            }
+            else if (e.PropertyName == nameof(SymbolViewModel.Path))
+            {
+                _symbolExportPlaceTextField.StringValue = _symbol.Path;
             }
             else if (e.PropertyName == nameof(SymbolViewModel.Name))
             {
@@ -66,7 +80,7 @@ namespace SymbolExporter
             _imageView.SymbolConfiguration = configuration;
             _imageView.TranslatesAutoresizingMaskIntoConstraints = false;
             _imageView.Image = _image;
-            this.View.AddSubview(_imageView);
+            View.AddSubview(_imageView);
 
             var cs = new[] {
                 _imageView.TopAnchor.ConstraintEqualToAnchor(View.TopAnchor, 20),
@@ -97,8 +111,8 @@ namespace SymbolExporter
             NSLayoutConstraint.ActivateConstraints(cs);
 
             _weightSlider = new NSSlider();
-            _weightSlider.MinValue = -4;
-            _weightSlider.MaxValue = 4;
+            _weightSlider.MinValue = -6;
+            _weightSlider.MaxValue = 6;
             _weightSlider.Title = "Weight";
             _weightSlider.IntValue = 0;
             _weightSlider.Activated += Slider_Activated;
@@ -114,7 +128,7 @@ namespace SymbolExporter
 
                 _weightTextField.LeftAnchor.ConstraintEqualToAnchor(_symbolNameTextField.LeftAnchor),
                 _weightTextField.CenterYAnchor.ConstraintEqualToAnchor(_weightSlider.CenterYAnchor),
-                _weightTextField.WidthAnchor.ConstraintEqualToConstant(80),
+                _weightTextField.WidthAnchor.ConstraintEqualToConstant(100),
             };
             NSLayoutConstraint.ActivateConstraints(cs);
 
@@ -152,8 +166,9 @@ namespace SymbolExporter
             _symbolExportPlaceTextField.PlaceholderString = "Export Path";
             _symbolExportPlaceTextField.Editable = false;
             _symbolExportPlaceTextField.Bordered = false;
+            _symbolExportPlaceTextField.StringValue = _symbol.Path;
             //_symbolExportPlaceTextField.StringValue = _symbol.Name;
-            _symbolExportPlaceTextField.Alignment = NSTextAlignment.Center;
+            _symbolExportPlaceTextField.Alignment = NSTextAlignment.Left;
             _symbolExportPlaceTextField.EditingEnded += _symbolNameTextTield_EditingEnded;
             _symbolExportPlaceTextField.TranslatesAutoresizingMaskIntoConstraints = false;
 
@@ -165,6 +180,7 @@ namespace SymbolExporter
                 _symbolExportPlaceTextField.TopAnchor.ConstraintEqualToAnchor(_weightSlider.BottomAnchor, -10),
                 chooseButton.CenterYAnchor.ConstraintEqualToAnchor(_symbolExportPlaceTextField.CenterYAnchor),
                 chooseButton.RightAnchor.ConstraintEqualToAnchor(_symbolNameTextField.RightAnchor),
+                chooseButton.WidthAnchor.ConstraintEqualToConstant(80),
             };
             NSLayoutConstraint.ActivateConstraints(cs);
 
@@ -184,31 +200,121 @@ namespace SymbolExporter
             _heightTextField.TranslatesAutoresizingMaskIntoConstraints = false;
             View.AddSubview(_heightTextField);
 
-            _tt = new NSTextField();
-            _tt.StringValue = "*";
-            _tt.Editable = false;
-            _tt.Bordered = false;
-            _tt.Alignment = NSTextAlignment.Center;
-            //_tt.EditingEnded += _symbolNameTextTield_EditingEnded;
-            _tt.TranslatesAutoresizingMaskIntoConstraints = false;
-            //View.AddSubview(_tt);
+            var widthTitle = new NSTextField();
+            widthTitle.StringValue = "Width:";
+            widthTitle.Editable = false;
+            widthTitle.Bordered = false;
+            widthTitle.Alignment = NSTextAlignment.Center;
+            widthTitle.BackgroundColor = NSColor.Clear;
+            widthTitle.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(widthTitle);
+
+            var heightTitle = new NSTextField();
+            heightTitle.StringValue = "Height:";
+            heightTitle.Editable = false;
+            heightTitle.BackgroundColor = NSColor.Clear;
+            heightTitle.Bordered = false;
+            heightTitle.Alignment = NSTextAlignment.Center;
+            heightTitle.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(heightTitle);
+
+            _lockButton = new NSButton();
+            _lockButton.Image = NSImage.GetSystemSymbol(_isLock ? "lock" : "lock.open", null);
+            _lockButton.TranslatesAutoresizingMaskIntoConstraints = false;
+            _lockButton.Activated += LockButton_Activated;
+            _lockButton.Bordered = false;
+            
+            View.AddSubview(_lockButton);
+
+            var formatTitle = new NSTextField();
+            formatTitle.StringValue = "Format:";
+            formatTitle.Editable = false;
+            formatTitle.Bordered = false;
+            formatTitle.Alignment = NSTextAlignment.Center;
+            formatTitle.BackgroundColor = NSColor.Clear;
+            formatTitle.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(formatTitle);
+
+            var comboBox = new NSComboBox();
+            comboBox.TranslatesAutoresizingMaskIntoConstraints = false;
+            comboBox.Editable = false;
+            comboBox.SelectionChanged += ComboBox_SelectionChanged;
+            View.AddSubview(comboBox);
+
+            var names = Enum.GetNames(typeof(SymbolViewModel.ExportFormat));
+            foreach (var name in names)
+                comboBox.Add(new NSString(name));
+
+            comboBox.SelectItem(0);
+
+            var switchTitle = new NSTextField();
+            switchTitle.StringValue = "As @2x";
+            switchTitle.Editable = false;
+            switchTitle.Bordered = false;
+            switchTitle.Alignment = NSTextAlignment.Center;
+            switchTitle.BackgroundColor = NSColor.Clear;
+            switchTitle.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(switchTitle);
+
+
+            var switchBu = new NSToggleButton();
+            switchBu.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(switchBu);
+
 
             cs = new[] {
-                _widthTextField.LeadingAnchor.ConstraintEqualToAnchor(_symbolNameTextField.LeadingAnchor),
-                _widthTextField.TopAnchor.ConstraintEqualToAnchor(chooseButton.BottomAnchor, 10),
-                //_widthTextField.WidthAnchor.ConstraintEqualToConstant(200),
+                widthTitle.LeadingAnchor.ConstraintEqualToAnchor(_symbolNameTextField.LeadingAnchor),
+                widthTitle.TopAnchor.ConstraintEqualToAnchor(chooseButton.BottomAnchor, 10),
 
-                _heightTextField.TrailingAnchor.ConstraintEqualToAnchor(_symbolNameTextField.TrailingAnchor),
-                _heightTextField.TopAnchor.ConstraintEqualToAnchor(chooseButton.BottomAnchor, 10),
-                _widthTextField.WidthAnchor.ConstraintEqualToAnchor(_heightTextField.WidthAnchor),
+                _widthTextField.LeadingAnchor.ConstraintEqualToAnchor(widthTitle.TrailingAnchor),
+                _widthTextField.CenterYAnchor.ConstraintEqualToAnchor(widthTitle.CenterYAnchor),
+                _widthTextField.WidthAnchor.ConstraintEqualToConstant(200),
 
-                //_heightTextField.WidthAnchor.ConstraintEqualToConstant(200),
+                heightTitle.LeadingAnchor.ConstraintEqualToAnchor(_symbolNameTextField.LeadingAnchor),
+                heightTitle.TopAnchor.ConstraintEqualToAnchor(widthTitle.BottomAnchor, 10),
+                heightTitle.WidthAnchor.ConstraintEqualToAnchor(widthTitle.WidthAnchor),
 
-                _widthTextField.TrailingAnchor.ConstraintEqualToAnchor(_heightTextField.LeadingAnchor, -10),
+                _heightTextField.LeadingAnchor.ConstraintEqualToAnchor(heightTitle.TrailingAnchor),
+                _heightTextField.CenterYAnchor.ConstraintEqualToAnchor(heightTitle.CenterYAnchor),
+                _heightTextField.WidthAnchor.ConstraintEqualToConstant(200),
 
+                _lockButton.WidthAnchor.ConstraintEqualToConstant(30),
+                _lockButton.HeightAnchor.ConstraintEqualToConstant(30),
+                _lockButton.LeadingAnchor.ConstraintEqualToAnchor(_widthTextField.TrailingAnchor, 10),
+                _lockButton.CenterYAnchor.ConstraintEqualToAnchor(widthTitle.BottomAnchor, 5),
+
+
+                formatTitle.LeadingAnchor.ConstraintEqualToAnchor(_symbolNameTextField.LeadingAnchor),
+                formatTitle.TopAnchor.ConstraintEqualToAnchor(heightTitle.BottomAnchor, 10),
+                formatTitle.WidthAnchor.ConstraintEqualToAnchor(heightTitle.WidthAnchor),
+
+                comboBox.WidthAnchor.ConstraintEqualToConstant(100),
+                comboBox.LeadingAnchor.ConstraintEqualToAnchor(formatTitle.TrailingAnchor),
+                comboBox.CenterYAnchor.ConstraintEqualToAnchor(formatTitle.CenterYAnchor),
+
+                switchTitle.LeadingAnchor.ConstraintEqualToAnchor(comboBox.TrailingAnchor),
+                switchTitle.CenterYAnchor.ConstraintEqualToAnchor(formatTitle.CenterYAnchor),
+
+                //comboBox.TopAnchor.ConstraintEqualToAnchor(heightTitle.BottomAnchor, 10),
             };
 
             NSLayoutConstraint.ActivateConstraints(cs);
+        }
+
+        private void ComboBox_SelectionChanged(object sender, EventArgs e)
+        {
+            if (!(sender is NSNotification notificationCenter) || !(notificationCenter.Object is NSComboBox comboBox))
+                return;
+
+            int index = (int)comboBox.SelectedIndex;
+            //Enum.TryParse<SymbolViewModel.ExportFormat>()
+            _symbol.Format = (SymbolViewModel.ExportFormat)index;
+        }
+
+        private void LockButton_Activated(object sender, EventArgs e)
+        {
+            _isLock = !_isLock;
+            _lockButton.Image = NSImage.GetSystemSymbol(_isLock ? "lock" : "lock.open", null);
         }
 
         private void _widthTextField_EditingEnded(object sender, EventArgs e)
@@ -222,7 +328,12 @@ namespace SymbolExporter
                 return;
             }
             else
+            {
                 _symbol.Width = value;
+
+                if (_isLock)
+                    _symbol.Height = value;
+            }
 
         }
 
@@ -237,7 +348,12 @@ namespace SymbolExporter
                 return;
             }
             else
+            {
                 _symbol.Height = value;
+
+                if (_isLock)
+                    _symbol.Width = value;
+            }
         }
 
         NSOpenPanel openPanel;
@@ -257,7 +373,8 @@ namespace SymbolExporter
         {
             if (result == 1)
             {
-
+                var dic = openPanel.Directory;
+                _symbol.Path = dic;
             }
         }
 
@@ -279,7 +396,7 @@ namespace SymbolExporter
         private void Slider_Activated(object sender, EventArgs e)
         {
             var slider = sender as NSSlider;
-            var value = slider.IntValue / 2f;
+            var value = slider.IntValue * 0.25f;
             _symbol.Weight = value;
 
             //var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight);
@@ -300,21 +417,36 @@ namespace SymbolExporter
         
         private void ExportButton_Activated(object sender, EventArgs e)
         {
-            //var image = _imageView.Image;
-            //var image = Resize(_imageView.Image, 8);
-            var image = Resize1(_imageView.Image, _symbol.Height);
+            if (!Directory.Exists(_symbol.Path))
+                return;
+
+            var dp = Path.Combine(_symbol.Path, _symbol.Name);
+            if (Directory.Exists(dp))
+                return;
+
+            Directory.CreateDirectory(dp);
+            var image = ResizeSFImage(_imageView.Image, _symbol.Height);
             var bitmapImageRep = new NSBitmapImageRep(image.AsTiff());
-            //bitmapImageRep.Size = new CGSize(100, 100);
-            //NSDictionary dictionary = NSDictionary.FromObjectAndKey(NSNumber.FromFloat(2f), NSBitmapImageRep.CompressionFactor);
-            var pngData = bitmapImageRep.RepresentationUsingTypeProperties(NSBitmapImageFileType.Png);
-            var directory = Directory.GetCurrentDirectory();
-            var fileName = $"{Guid.NewGuid()}.png";
-            var path = Path.Combine(directory, fileName);
-            pngData.Save(path, false);
+
+            NSData data;
+            string fileName;
+            if (_symbol.Format == SymbolViewModel.ExportFormat.PNG)
+            {
+                data = bitmapImageRep.RepresentationUsingTypeProperties(NSBitmapImageFileType.Png);
+                fileName = $"{_symbol.Name}.png";
+            }
+            else
+            {
+                data = bitmapImageRep.RepresentationUsingTypeProperties(NSBitmapImageFileType.Jpeg);
+                fileName = $"{_symbol.Name}.jpg";
+            }
+
+            var path = Path.Combine(dp, fileName);
+            data.Save(path, false);
 
         }
 
-        private NSImage Resize1(NSImage inputImage, nfloat side)
+        private NSImage ResizeSFImage(NSImage inputImage, nfloat side)
         {
             var ratio = inputImage.Size.Width / inputImage.Size.Height;
             var r1 = side / inputImage.Size.Width;

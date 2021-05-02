@@ -11,6 +11,8 @@ namespace SymbolExporter
         private nfloat _height;
         private nfloat _weight;
         private string _path;
+        private ExportFormat _exportFormat = ExportFormat.PNG;
+
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -19,12 +21,13 @@ namespace SymbolExporter
 
         }
 
-        public SymbolViewModel(string name, nfloat width, nfloat height, nfloat weight)
+        public SymbolViewModel(string name, nfloat width, nfloat height, nfloat weight, string path)
         {
             _name = name;
             _width = width;
             _height = height;
             _weight = weight;
+            _path = path;
         }
 
         public string Name
@@ -87,6 +90,25 @@ namespace SymbolExporter
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Path)));
                 }
             }
+        }
+
+        public ExportFormat Format
+        {
+            get => _exportFormat;
+            set
+            {
+                if (value != _exportFormat)
+                {
+                    _exportFormat = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Format)));
+                }
+            }
+        }
+
+        public enum ExportFormat
+        {
+            PNG = 0,
+            JPG,
         }
     }
 }
