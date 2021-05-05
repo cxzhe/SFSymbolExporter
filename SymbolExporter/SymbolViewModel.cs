@@ -12,7 +12,9 @@ namespace SymbolExporter
         private nfloat _weight;
         private string _path;
         private ExportFormat _exportFormat = ExportFormat.PNG;
-
+        private bool _lockRatio;
+        private bool _generateAsTwoScaleFactor = true;
+        private bool _generateThreeScaleFactor = true;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -21,13 +23,14 @@ namespace SymbolExporter
 
         }
 
-        public SymbolViewModel(string name, nfloat width, nfloat height, nfloat weight, string path)
+        public SymbolViewModel(string name, nfloat width, nfloat height, nfloat weight, string path, bool lockRatio)
         {
             _name = name;
             _width = width;
             _height = height;
             _weight = weight;
             _path = path;
+            _lockRatio = lockRatio;
         }
 
         public string Name
@@ -101,6 +104,45 @@ namespace SymbolExporter
                 {
                     _exportFormat = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Format)));
+                }
+            }
+        }
+
+        public bool LockRatio
+        {
+            get => _lockRatio;
+            set
+            {
+                if (value != _lockRatio)
+                {
+                    _lockRatio = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LockRatio)));
+                }
+            }
+        }
+
+        public bool GenerateAsTwoScaleFactor
+        {
+            get => _generateAsTwoScaleFactor;
+            set
+            {
+                if (value != _generateAsTwoScaleFactor)
+                {
+                    _generateAsTwoScaleFactor = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GenerateAsTwoScaleFactor)));
+                }
+            }
+        }
+
+        public bool GenerateThreeScaleFactor
+        {
+            get => _generateThreeScaleFactor;
+            set
+            {
+                if (value != _generateThreeScaleFactor)
+                {
+                    _generateThreeScaleFactor = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GenerateThreeScaleFactor)));
                 }
             }
         }

@@ -82,8 +82,7 @@
       <DependentUpon>ViewController.cs</DependentUpon>
     </Compile>
     <Compile Include="SymbolViewModel.cs" />
-    <Compile Include="ExportViewModel.cs" />
-    <Compile Include="FormatDataSource.cs" />
+    <Compile Include="ImageExtension.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Main.storyboard" />
