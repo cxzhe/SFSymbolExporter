@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 using AppKit;
@@ -18,7 +19,8 @@ namespace SymbolExporter
         private NSTextField _symbolNameTextField;
         private NSTextField _symbolExportPlaceTextField;
         private NSButton _lockButton;
-        private NSSlider _weightSlider;
+        private NSComboBox _weightComboBox;
+        private Dictionary<NSString, nfloat> _fontWeights;
 
         private readonly SymbolViewModel _symbol;
 
@@ -27,8 +29,24 @@ namespace SymbolExporter
         public ViewController(IntPtr handle) : base(handle)
         {
             var documents = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            _symbol = new SymbolViewModel("circle", 50, 50, 0, documents, true);
+            _symbol = new SymbolViewModel("circle", 50, 50, NSFontWeight.Regular, documents, true);
             _symbol.PropertyChanged += _symbol_PropertyChanged;
+
+            InitialWeight();
+        }
+
+        private void InitialWeight()
+        {
+            _fontWeights = new Dictionary<NSString, nfloat>();
+            _fontWeights.Add(new NSString(nameof(NSFontWeight.UltraLight)), NSFontWeight.UltraLight);
+            _fontWeights.Add(new NSString(nameof(NSFontWeight.Thin)), NSFontWeight.Thin);
+            _fontWeights.Add(new NSString(nameof(NSFontWeight.Light)), NSFontWeight.Light);
+            _fontWeights.Add(new NSString(nameof(NSFontWeight.Regular)), NSFontWeight.Regular);
+            _fontWeights.Add(new NSString(nameof(NSFontWeight.Medium)), NSFontWeight.Medium);
+            _fontWeights.Add(new NSString(nameof(NSFontWeight.Semibold)), NSFontWeight.Semibold);
+            _fontWeights.Add(new NSString(nameof(NSFontWeight.Bold)), NSFontWeight.Bold);
+            _fontWeights.Add(new NSString(nameof(NSFontWeight.Heavy)), NSFontWeight.Heavy);
+            _fontWeights.Add(new NSString(nameof(NSFontWeight.Black)), NSFontWeight.Black);
         }
 
         public override void ViewDidLoad()
@@ -40,7 +58,7 @@ namespace SymbolExporter
 
         public override void ViewDidAppear()
         {
-            base.ViewDidAppear();   
+            base.ViewDidAppear();
         }
 
         private void SetupView()
@@ -48,7 +66,7 @@ namespace SymbolExporter
             _weightTextField = new NSTextField();
             _weightTextField.Editable = false;
             _weightTextField.Bordered = false;
-            _weightTextField.StringValue = $"Weight: {_symbol.Weight}";
+            _weightTextField.StringValue = $"Weight:";
             _weightTextField.BackgroundColor = NSColor.Clear;
             _weightTextField.TranslatesAutoresizingMaskIntoConstraints = false;
 
@@ -105,26 +123,26 @@ namespace SymbolExporter
 
             NSLayoutConstraint.ActivateConstraints(cs);
 
-            _weightSlider = new NSSlider();
-            _weightSlider.MinValue = -4;
-            _weightSlider.MaxValue = 4;
-            _weightSlider.Title = "Weight";
-            _weightSlider.IntValue = 0;
-            _weightSlider.Activated += Slider_Activated;
-            _weightSlider.TranslatesAutoresizingMaskIntoConstraints = false;
-            View.AddSubview(_weightSlider);
+            _weightComboBox = new NSComboBox();
+
+            foreach (var weight in _fontWeights)
+                _weightComboBox.Add(weight.Key);
+
+            _weightComboBox.Editable = false;
+            _weightComboBox.SelectItem(3);
+            _weightComboBox.VisibleItems = _fontWeights.Count;
+            _weightComboBox.SelectionChanged += WeightComboBox_SelectionChanged;
+            _weightComboBox.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(_weightComboBox);
 
             cs = new[]
             {
-                _weightTextField.LeadingAnchor.ConstraintEqualToAnchor(nameTitle.LeadingAnchor),
-                //_weightTextField.TopAnchor.ConstraintEqualToAnchor(_symbolNameTextField.BottomAnchor, 10),
-                _weightTextField.WidthAnchor.ConstraintEqualToConstant(100),
-                _weightTextField.CenterYAnchor.ConstraintEqualToAnchor(_weightSlider.CenterYAnchor),
+                _weightTextField.TrailingAnchor.ConstraintEqualToAnchor(nameTitle.TrailingAnchor),
+                _weightTextField.CenterYAnchor.ConstraintEqualToAnchor(_weightComboBox.CenterYAnchor),
 
-                _weightSlider.TopAnchor.ConstraintEqualToAnchor(_symbolNameTextField.BottomAnchor, 10),
-                _weightSlider.LeadingAnchor.ConstraintEqualToAnchor(_weightTextField.TrailingAnchor, 10),
-                _weightSlider.TrailingAnchor.ConstraintEqualToAnchor(_symbolNameTextField.TrailingAnchor),
-                //_weightSlider.HeightAnchor.ConstraintEqualToConstant(60),
+                _weightComboBox.TopAnchor.ConstraintEqualToAnchor(_symbolNameTextField.BottomAnchor, 10),
+                _weightComboBox.LeadingAnchor.ConstraintEqualToAnchor(_weightTextField.TrailingAnchor),
+                _weightComboBox.WidthAnchor.ConstraintEqualToConstant(100),
             };
             NSLayoutConstraint.ActivateConstraints(cs);
 
@@ -344,9 +362,8 @@ namespace SymbolExporter
         {
             if (e.PropertyName == nameof(SymbolViewModel.Weight))
             {
-                var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight);
+                var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight, NSImageSymbolScale.Small);
                 _imageView.SymbolConfiguration = configuration;
-                _weightTextField.StringValue = $"Weight: {_symbol.Weight}";
             }
             else if (e.PropertyName == nameof(SymbolViewModel.Width))
             {
@@ -505,11 +522,16 @@ namespace SymbolExporter
             _symbol.Name = textField.StringValue;
         }
 
-        private void Slider_Activated(object sender, EventArgs e)
+        private void WeightComboBox_SelectionChanged(object sender, EventArgs e)
         {
-            var slider = sender as NSSlider;
-            var value = slider.IntValue * 0.25f;
-            _symbol.Weight = value;
+            if (sender is not NSNotification noti || noti.Object is not NSComboBox comboBox ||
+                comboBox.SelectedValue is not NSString key)
+                return;
+
+            if (_fontWeights.ContainsKey(key))
+            {
+                _symbol.Weight = _fontWeights[key];
+            }
         }
 
         private void LoadImage()
