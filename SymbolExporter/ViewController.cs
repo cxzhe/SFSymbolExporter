@@ -12,13 +12,13 @@ namespace SymbolExporter
         private const int _side = 200;
 
         private NSImageView _imageView;
-        //private NSTextField _weightTextField;
+        private NSTextField _weightTextField;
         private NSTextField _widthTextField;
         private NSTextField _heightTextField;
         private NSTextField _symbolNameTextField;
         private NSTextField _symbolExportPlaceTextField;
         private NSButton _lockButton;
-        //private NSSlider _weightSlider;
+        private NSSlider _weightSlider;
 
         private readonly SymbolViewModel _symbol;
 
@@ -38,23 +38,29 @@ namespace SymbolExporter
             SetupView();
         }
 
+        public override void ViewDidAppear()
+        {
+            base.ViewDidAppear();   
+        }
+
         private void SetupView()
         {
-            //_weightTextField = new NSTextField();
-            //_weightTextField.Editable = false;
-            //_weightTextField.Bordered = false;
-            //_weightTextField.StringValue = $"Weight: {_symbol.Weight}";
-            //_weightTextField.BackgroundColor = NSColor.Clear;
-            //_weightTextField.TranslatesAutoresizingMaskIntoConstraints = false;
+            _weightTextField = new NSTextField();
+            _weightTextField.Editable = false;
+            _weightTextField.Bordered = false;
+            _weightTextField.StringValue = $"Weight: {_symbol.Weight}";
+            _weightTextField.BackgroundColor = NSColor.Clear;
+            _weightTextField.TranslatesAutoresizingMaskIntoConstraints = false;
 
-            //View.AddSubview(_weightTextField);
+            View.AddSubview(_weightTextField);
 
             var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight);
-
             _imageView = new NSImageView();
             _imageView.SymbolConfiguration = configuration;
+
             _imageView.TranslatesAutoresizingMaskIntoConstraints = false;
             _imageView.Image = NSImage.GetSystemSymbol(_symbol.Name, null); ;
+            _imageView.ContentTintColor = NSColor.Black;
             View.AddSubview(_imageView);
 
             var cs = new[] {
@@ -99,27 +105,28 @@ namespace SymbolExporter
 
             NSLayoutConstraint.ActivateConstraints(cs);
 
-            //_weightSlider = new NSSlider();
-            //_weightSlider.MinValue = -4;
-            //_weightSlider.MaxValue = 4;
-            //_weightSlider.Title = "Weight";
-            //_weightSlider.IntValue = 0;
-            //_weightSlider.Activated += Slider_Activated;
-            //_weightSlider.TranslatesAutoresizingMaskIntoConstraints = false;
-            //View.AddSubview(_weightSlider);
+            _weightSlider = new NSSlider();
+            _weightSlider.MinValue = -4;
+            _weightSlider.MaxValue = 4;
+            _weightSlider.Title = "Weight";
+            _weightSlider.IntValue = 0;
+            _weightSlider.Activated += Slider_Activated;
+            _weightSlider.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(_weightSlider);
 
-            //cs = new[]
-            //{
-            //    _weightSlider.TopAnchor.ConstraintEqualToAnchor(_symbolNameTextField.BottomAnchor),
-            //    _weightSlider.RightAnchor.ConstraintEqualToAnchor(_symbolNameTextField.RightAnchor),
-            //    _weightSlider.LeftAnchor.ConstraintEqualToAnchor(_weightTextField.RightAnchor, 10),
-            //    _weightSlider.HeightAnchor.ConstraintEqualToConstant(60),
+            cs = new[]
+            {
+                _weightTextField.LeadingAnchor.ConstraintEqualToAnchor(nameTitle.LeadingAnchor),
+                //_weightTextField.TopAnchor.ConstraintEqualToAnchor(_symbolNameTextField.BottomAnchor, 10),
+                _weightTextField.WidthAnchor.ConstraintEqualToConstant(100),
+                _weightTextField.CenterYAnchor.ConstraintEqualToAnchor(_weightSlider.CenterYAnchor),
 
-            //    _weightTextField.LeftAnchor.ConstraintEqualToAnchor(nameTitle.LeadingAnchor),
-            //    _weightTextField.CenterYAnchor.ConstraintEqualToAnchor(_weightSlider.CenterYAnchor),
-            //    _weightTextField.WidthAnchor.ConstraintEqualToConstant(100),
-            //};
-            //NSLayoutConstraint.ActivateConstraints(cs);
+                _weightSlider.TopAnchor.ConstraintEqualToAnchor(_symbolNameTextField.BottomAnchor, 10),
+                _weightSlider.LeadingAnchor.ConstraintEqualToAnchor(_weightTextField.TrailingAnchor, 10),
+                _weightSlider.TrailingAnchor.ConstraintEqualToAnchor(_symbolNameTextField.TrailingAnchor),
+                //_weightSlider.HeightAnchor.ConstraintEqualToConstant(60),
+            };
+            NSLayoutConstraint.ActivateConstraints(cs);
 
             NSButton exportButton = new NSButton();
             exportButton.BezelStyle = NSBezelStyle.RegularSquare;
@@ -179,7 +186,7 @@ namespace SymbolExporter
 
             cs = new[] {
                 exportPathTitle.LeadingAnchor.ConstraintEqualToAnchor(nameTitle.LeadingAnchor),
-                exportPathTitle.TopAnchor.ConstraintEqualToAnchor(_symbolNameTextField.BottomAnchor, 10),
+                exportPathTitle.TopAnchor.ConstraintEqualToAnchor(_weightTextField.BottomAnchor, 10),
 
                 _symbolExportPlaceTextField.LeadingAnchor.ConstraintEqualToAnchor(exportPathTitle.TrailingAnchor),
                 _symbolExportPlaceTextField.TrailingAnchor.ConstraintEqualToAnchor(chooseButton.LeadingAnchor, -10),
@@ -339,7 +346,7 @@ namespace SymbolExporter
             {
                 var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight);
                 _imageView.SymbolConfiguration = configuration;
-                //_weightTextField.StringValue = $"Weight: {_symbol.Weight}";
+                _weightTextField.StringValue = $"Weight: {_symbol.Weight}";
             }
             else if (e.PropertyName == nameof(SymbolViewModel.Width))
             {
@@ -518,6 +525,9 @@ namespace SymbolExporter
 
             if (!Directory.Exists(_symbol.Path))
                 return;
+            var image = NSImage.GetSystemSymbol(_symbol.Name, null);
+            if (image == null)
+                return;
 
             var sourceDirectory = Path.Combine(_symbol.Path, _symbol.Name);
             if (!Directory.Exists(sourceDirectory))
@@ -553,10 +563,13 @@ namespace SymbolExporter
                 replace.KeyEquivalent = "\r";
                 cancel.KeyEquivalent = "";
 
-                if (alert.RunModal() == 1)
+                if (alert.RunModal() != (int)NSAlertButtonReturn.First)
                     return;
             }
-            _imageView.Image.SaveImageFile(source, _symbol.Width, _symbol.Height, fileType);
+            var imageView = GetSFImageView(image, _symbol.Width, _symbol.Height, _symbol.Weight);
+            imageView.SaveViewToPng(source, fileType);
+
+            //image.SaveImageFile(source, _symbol.Width, _symbol.Height, fileType);
 
             if (_symbol.GenerateAsTwoScaleFactor && _symbol.GenerateThreeScaleFactor)
             {
@@ -584,8 +597,23 @@ namespace SymbolExporter
                     if (alert.RunModal() != (int)NSAlertButtonReturn.First)
                         return;
                 }
-                _imageView.Image.SaveImageFile(source, _symbol.Width * 1.5f, _symbol.Height * 1.5f, fileType);
+
+                imageView = GetSFImageView(image, _symbol.Width * 1.5f, _symbol.Height * 1.5f, _symbol.Weight);
+                imageView.SaveViewToPng(source, fileType);
+                //image.SaveImageFile(source, _symbol.Width * 1.5f, _symbol.Height * 1.5f, fileType);
             }
+        }
+
+        private NSImageView GetSFImageView(NSImage image, nfloat width, nfloat height, nfloat weight)
+        {
+            var min = width > height ? height : width;
+            var configuration = NSImageSymbolConfiguration.Create(min, weight);
+
+            var imageView = new NSImageView(new CGRect(0, 0, width, height));
+            imageView.SymbolConfiguration = configuration;
+            imageView.ContentTintColor = NSColor.Black;
+            imageView.Image = image;
+            return imageView;
         }
 
         //private NSImage Resize(NSImage inputImage, nfloat factor)
@@ -597,7 +625,7 @@ namespace SymbolExporter
         //    transform.Concat();
         //    inputImage.Draw(CGPoint.Empty, CGRect.Empty, NSCompositingOperation.Copy, 1);
         //    image.UnlockFocus();
-            
+
         //    image.DangerousAutorelease();
 
         //    return image;

@@ -12,8 +12,9 @@ namespace SymbolExporter
         {
             var image = sourceImage.ResizeSFImage(width, height);
             var imageRep = image.UnscaledBitmapImageRep();
+            var imageRep1 = new NSBitmapImageRep(image.AsTiff());
             var data = imageRep.RepresentationUsingTypeProperties(fileType);
-
+            
             data.Save(source, false);
         }
 
@@ -38,30 +39,53 @@ namespace SymbolExporter
                 point = new CGPoint(margin, 0);
             }
 
-            var image = new NSImage(new CGSize(width, height));
+            var image = new NSImage(new CGSize(sourceImage.Size.Width * 2, sourceImage.Size.Height * 2));
             image.LockFocus();
-            NSAffineTransform transform = new NSAffineTransform();
-            transform.Scale(factor);
+            var transform = new NSAffineTransform();
+            transform.Scale(2);
             transform.Concat();
-            sourceImage.Draw(point, CGRect.Empty, NSCompositingOperation.Copy, 1);
+            sourceImage.Draw(CGPoint.Empty, CGRect.Empty, NSCompositingOperation.Copy, 1);
             image.UnlockFocus();
             image.DangerousAutorelease();
-
+            
             return image;
         }
 
         public static NSBitmapImageRep UnscaledBitmapImageRep(this NSImage image)
         {
+            
             var imageRep = new NSBitmapImageRep(IntPtr.Zero, (nint)image.Size.Width, (nint)image.Size.Height, 8, 4, true, false, NSColorSpace.DeviceRGB, 0, 0);
             imageRep.Size = image.Size;
 
             NSGraphicsContext.GlobalSaveGraphicsState();
             NSGraphicsContext.CurrentContext = NSGraphicsContext.FromBitmap(imageRep);
-            image.Draw(new CGPoint(0, 0), CGRect.Empty, NSCompositingOperation.SourceOver, 1);
+            image.Draw(CGPoint.Empty, CGRect.Empty, NSCompositingOperation.SourceOver, 1);
             NSGraphicsContext.GlobalRestoreGraphicsState();
 
             return imageRep;
         }
 
+        public static NSImage ImageRepresentation(this NSView view)
+        {
+            var size = view.Bounds.Size;
+            var imageSize = new CGSize(size.Width, size.Height);
+
+            NSBitmapImageRep bir = view.BitmapImageRepForCachingDisplayInRect(view.Bounds);
+            bir.Size = imageSize;
+            view.CacheDisplay(view.Bounds, bir);
+
+            var image = new NSImage(imageSize);
+            image.AddRepresentation(bir);
+
+            return image;
+        }
+
+        public static void SaveViewToPng(this NSView view, string source, NSBitmapImageFileType fileType)
+        {
+            var image = view.ImageRepresentation();
+            var imageRep = new NSBitmapImageRep(image.AsTiff());
+            var data = imageRep.RepresentationUsingTypeProperties(fileType);
+            data.Save(source, false);
+        }
     }
 }
