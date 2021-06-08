@@ -83,7 +83,8 @@ namespace SymbolExporter
         public static void SaveViewToPng(this NSView view, string source, NSBitmapImageFileType fileType)
         {
             var image = view.ImageRepresentation();
-            var imageRep = new NSBitmapImageRep(image.AsTiff());
+            //var imageRep = new NSBitmapImageRep(image.AsTiff());
+            var imageRep = image.UnscaledBitmapImageRep();
             var data = imageRep.RepresentationUsingTypeProperties(fileType);
             data.Save(source, false);
         }

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
-
+using AppKit;
 
 namespace SymbolExporter
 {
@@ -10,6 +10,7 @@ namespace SymbolExporter
         private nfloat _width;
         private nfloat _height;
         private nfloat _weight;
+        private NSImageSymbolScale _symbolScale;
         private string _path;
         private ExportFormat _exportFormat = ExportFormat.PNG;
         private bool _lockRatio;
@@ -23,7 +24,7 @@ namespace SymbolExporter
 
         }
 
-        public SymbolViewModel(string name, nfloat width, nfloat height, nfloat weight, string path, bool lockRatio)
+        public SymbolViewModel(string name, nfloat width, nfloat height, nfloat weight, string path, bool lockRatio, NSImageSymbolScale scale)
         {
             _name = name;
             _width = width;
@@ -31,6 +32,7 @@ namespace SymbolExporter
             _weight = weight;
             _path = path;
             _lockRatio = lockRatio;
+            _symbolScale = scale;
         }
 
         public string Name
@@ -80,6 +82,20 @@ namespace SymbolExporter
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Weight)));
                 }
             }
+        }
+
+        public NSImageSymbolScale SymbolScale
+        {
+            get => _symbolScale;
+            set
+            {
+                if (value != this._symbolScale)
+                {
+                    _symbolScale = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SymbolScale)));
+                }
+            }
+
         }
 
         public string Path

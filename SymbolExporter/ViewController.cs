@@ -29,7 +29,7 @@ namespace SymbolExporter
         public ViewController(IntPtr handle) : base(handle)
         {
             var documents = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            _symbol = new SymbolViewModel("circle", 50, 50, NSFontWeight.Regular, documents, true);
+            _symbol = new SymbolViewModel("circle", 50, 50, NSFontWeight.Regular, documents, true, NSImageSymbolScale.Medium);
             _symbol.PropertyChanged += _symbol_PropertyChanged;
 
             InitialWeight();
@@ -72,18 +72,22 @@ namespace SymbolExporter
 
             View.AddSubview(_weightTextField);
 
-            var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight);
+            var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight, _symbol.SymbolScale);
             _imageView = new NSImageView();
             _imageView.SymbolConfiguration = configuration;
 
             _imageView.TranslatesAutoresizingMaskIntoConstraints = false;
             _imageView.Image = NSImage.GetSystemSymbol(_symbol.Name, null); ;
             _imageView.ContentTintColor = NSColor.Black;
+            _imageView.WantsLayer = true;
+            _imageView.Layer.BorderWidth = 1;
+            _imageView.Layer.BorderColor = NSColor.DarkGray.CGColor;
+            _imageView.Layer.MasksToBounds = true;
             View.AddSubview(_imageView);
 
             var cs = new[] {
                 _imageView.TopAnchor.ConstraintEqualToAnchor(View.TopAnchor, 20),
-                _imageView.LeftAnchor.ConstraintEqualToAnchor(View.LeftAnchor, 20),
+                _imageView.LeadingAnchor.ConstraintEqualToAnchor(View.LeadingAnchor, 20),
                 _imageView.WidthAnchor.ConstraintEqualToConstant(_side),
                 _imageView.HeightAnchor.ConstraintEqualToConstant(_side),
             };
@@ -362,7 +366,7 @@ namespace SymbolExporter
         {
             if (e.PropertyName == nameof(SymbolViewModel.Weight))
             {
-                var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight, NSImageSymbolScale.Small);
+                var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight, _symbol.SymbolScale);
                 _imageView.SymbolConfiguration = configuration;
             }
             else if (e.PropertyName == nameof(SymbolViewModel.Width))
@@ -588,7 +592,7 @@ namespace SymbolExporter
                 if (alert.RunModal() != (int)NSAlertButtonReturn.First)
                     return;
             }
-            var imageView = GetSFImageView(image, _symbol.Width, _symbol.Height, _symbol.Weight);
+            var imageView = GetSFImageView(image, _symbol.Width, _symbol.Height, _symbol.Weight, _symbol.SymbolScale);
             imageView.SaveViewToPng(source, fileType);
 
             //image.SaveImageFile(source, _symbol.Width, _symbol.Height, fileType);
@@ -620,16 +624,16 @@ namespace SymbolExporter
                         return;
                 }
 
-                imageView = GetSFImageView(image, _symbol.Width * 1.5f, _symbol.Height * 1.5f, _symbol.Weight);
+                imageView = GetSFImageView(image, _symbol.Width * 1.5f, _symbol.Height * 1.5f, _symbol.Weight, _symbol.SymbolScale);
                 imageView.SaveViewToPng(source, fileType);
                 //image.SaveImageFile(source, _symbol.Width * 1.5f, _symbol.Height * 1.5f, fileType);
             }
         }
 
-        private NSImageView GetSFImageView(NSImage image, nfloat width, nfloat height, nfloat weight)
+        private NSImageView GetSFImageView(NSImage image, nfloat width, nfloat height, nfloat weight, NSImageSymbolScale scale)
         {
             var min = width > height ? height : width;
-            var configuration = NSImageSymbolConfiguration.Create(min, weight);
+            var configuration = NSImageSymbolConfiguration.Create(min, weight, scale);
 
             var imageView = new NSImageView(new CGRect(0, 0, width, height));
             imageView.SymbolConfiguration = configuration;
