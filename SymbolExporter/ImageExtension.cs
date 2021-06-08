@@ -1,8 +1,8 @@
 ﻿using System;
 
 using AppKit;
-using CoreGraphics;
 using Foundation;
+using CoreGraphics;
 
 namespace SymbolExporter
 {
@@ -53,7 +53,6 @@ namespace SymbolExporter
 
         public static NSBitmapImageRep UnscaledBitmapImageRep(this NSImage image)
         {
-            
             var imageRep = new NSBitmapImageRep(IntPtr.Zero, (nint)image.Size.Width, (nint)image.Size.Height, 8, 4, true, false, NSColorSpace.DeviceRGB, 0, 0);
             imageRep.Size = image.Size;
 

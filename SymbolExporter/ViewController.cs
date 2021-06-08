@@ -14,13 +14,16 @@ namespace SymbolExporter
 
         private NSImageView _imageView;
         private NSTextField _weightTextField;
+        private NSTextField _scaleTextField;
         private NSTextField _widthTextField;
         private NSTextField _heightTextField;
         private NSTextField _symbolNameTextField;
         private NSTextField _symbolExportPlaceTextField;
         private NSButton _lockButton;
         private NSComboBox _weightComboBox;
+        private NSComboBox _scaleComboBox;
         private Dictionary<NSString, nfloat> _fontWeights;
+        private Dictionary<NSString, NSImageSymbolScale> _symbolScales;
 
         private readonly SymbolViewModel _symbol;
 
@@ -47,6 +50,12 @@ namespace SymbolExporter
             _fontWeights.Add(new NSString(nameof(NSFontWeight.Bold)), NSFontWeight.Bold);
             _fontWeights.Add(new NSString(nameof(NSFontWeight.Heavy)), NSFontWeight.Heavy);
             _fontWeights.Add(new NSString(nameof(NSFontWeight.Black)), NSFontWeight.Black);
+
+            _symbolScales = new Dictionary<NSString, NSImageSymbolScale>();
+            _symbolScales.Add(new NSString(nameof(NSImageSymbolScale.Small)), NSImageSymbolScale.Small);
+            _symbolScales.Add(new NSString(nameof(NSImageSymbolScale.Medium)), NSImageSymbolScale.Medium);
+            _symbolScales.Add(new NSString(nameof(NSImageSymbolScale.Large)), NSImageSymbolScale.Large);
+
         }
 
         public override void ViewDidLoad()
@@ -72,6 +81,15 @@ namespace SymbolExporter
 
             View.AddSubview(_weightTextField);
 
+            _scaleTextField = new NSTextField();
+            _scaleTextField.Editable = false;
+            _scaleTextField.Bordered = false;
+            _scaleTextField.StringValue = $"Scale:";
+            _scaleTextField.BackgroundColor = NSColor.Clear;
+            _scaleTextField.TranslatesAutoresizingMaskIntoConstraints = false;
+
+            View.AddSubview(_scaleTextField);
+
             var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight, _symbol.SymbolScale);
             _imageView = new NSImageView();
             _imageView.SymbolConfiguration = configuration;
@@ -79,10 +97,10 @@ namespace SymbolExporter
             _imageView.TranslatesAutoresizingMaskIntoConstraints = false;
             _imageView.Image = NSImage.GetSystemSymbol(_symbol.Name, null); ;
             _imageView.ContentTintColor = NSColor.Black;
-            _imageView.WantsLayer = true;
-            _imageView.Layer.BorderWidth = 1;
-            _imageView.Layer.BorderColor = NSColor.DarkGray.CGColor;
-            _imageView.Layer.MasksToBounds = true;
+            //_imageView.WantsLayer = true;
+            //_imageView.Layer.BorderWidth = 1;
+            //_imageView.Layer.BorderColor = NSColor.DarkGray.CGColor;
+            //_imageView.Layer.MasksToBounds = true;
             View.AddSubview(_imageView);
 
             var cs = new[] {
@@ -139,6 +157,18 @@ namespace SymbolExporter
             _weightComboBox.TranslatesAutoresizingMaskIntoConstraints = false;
             View.AddSubview(_weightComboBox);
 
+            _scaleComboBox = new NSComboBox();
+
+            foreach (var scale in _symbolScales)
+                _scaleComboBox.Add(scale.Key);
+
+            _scaleComboBox.Editable = false;
+            _scaleComboBox.SelectItem(1);
+            _scaleComboBox.VisibleItems = _weightComboBox.Count;
+            _scaleComboBox.SelectionChanged += _scaleComboBox_SelectionChanged;
+            _scaleComboBox.TranslatesAutoresizingMaskIntoConstraints = false;
+            View.AddSubview(_scaleComboBox);
+
             cs = new[]
             {
                 _weightTextField.TrailingAnchor.ConstraintEqualToAnchor(nameTitle.TrailingAnchor),
@@ -147,6 +177,13 @@ namespace SymbolExporter
                 _weightComboBox.TopAnchor.ConstraintEqualToAnchor(_symbolNameTextField.BottomAnchor, 10),
                 _weightComboBox.LeadingAnchor.ConstraintEqualToAnchor(_weightTextField.TrailingAnchor),
                 _weightComboBox.WidthAnchor.ConstraintEqualToConstant(100),
+
+                _scaleTextField.TrailingAnchor.ConstraintEqualToAnchor(nameTitle.TrailingAnchor),
+                _scaleTextField.CenterYAnchor.ConstraintEqualToAnchor(_scaleComboBox.CenterYAnchor),
+
+                _scaleComboBox.TopAnchor.ConstraintEqualToAnchor(_weightComboBox.BottomAnchor, 10),
+                _scaleComboBox.LeadingAnchor.ConstraintEqualToAnchor(_scaleTextField.TrailingAnchor),
+                _scaleComboBox.WidthAnchor.ConstraintEqualToConstant(100),
             };
             NSLayoutConstraint.ActivateConstraints(cs);
 
@@ -161,7 +198,7 @@ namespace SymbolExporter
             cs = new[] {
                 exportButton.BottomAnchor.ConstraintEqualToAnchor(View.BottomAnchor, -20),
                 exportButton.RightAnchor.ConstraintEqualToAnchor(View.RightAnchor, -20),
-                exportButton.WidthAnchor.ConstraintEqualToConstant(50),
+                //exportButton.WidthAnchor.ConstraintEqualToConstant(50),
                 exportButton.HeightAnchor.ConstraintEqualToConstant(50),
             };
 
@@ -208,7 +245,7 @@ namespace SymbolExporter
 
             cs = new[] {
                 exportPathTitle.LeadingAnchor.ConstraintEqualToAnchor(nameTitle.LeadingAnchor),
-                exportPathTitle.TopAnchor.ConstraintEqualToAnchor(_weightTextField.BottomAnchor, 10),
+                exportPathTitle.TopAnchor.ConstraintEqualToAnchor(_scaleTextField.BottomAnchor, 10),
 
                 _symbolExportPlaceTextField.LeadingAnchor.ConstraintEqualToAnchor(exportPathTitle.TrailingAnchor),
                 _symbolExportPlaceTextField.TrailingAnchor.ConstraintEqualToAnchor(chooseButton.LeadingAnchor, -10),
@@ -362,9 +399,22 @@ namespace SymbolExporter
             NSLayoutConstraint.ActivateConstraints(cs);
         }
 
+        private void _scaleComboBox_SelectionChanged(object sender, EventArgs e)
+        {
+            if (sender is not NSNotification noti || noti.Object is not NSComboBox comboBox ||
+                comboBox.SelectedValue is not NSString key)
+                return;
+
+
+            if (_symbolScales.ContainsKey(key))
+            {
+                _symbol.SymbolScale = _symbolScales[key];
+            }
+        }
+
         private void _symbol_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(SymbolViewModel.Weight))
+            if (e.PropertyName == nameof(SymbolViewModel.Weight) || e.PropertyName == nameof(SymbolViewModel.SymbolScale))
             {
                 var configuration = NSImageSymbolConfiguration.Create(_side, _symbol.Weight, _symbol.SymbolScale);
                 _imageView.SymbolConfiguration = configuration;
@@ -384,6 +434,10 @@ namespace SymbolExporter
             else if (e.PropertyName == nameof(SymbolViewModel.Name))
             {
                 LoadImage();
+            }
+            else if (e.PropertyName == nameof(SymbolViewModel.Width))
+            {
+                _widthTextField.StringValue = _symbol.Width.ToString();
             }
         }
 
